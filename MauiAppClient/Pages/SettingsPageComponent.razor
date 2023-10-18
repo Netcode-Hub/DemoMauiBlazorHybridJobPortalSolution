@@ -1,0 +1,75 @@
+﻿@page "/settings"
+
+ @using Havit.Blazor.Components.Web.Bootstrap
+@using MauiAppClient.Authentication
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider authStateProvider
+
+<HxSidebar ResponsiveBreakpoint="SidebarResponsiveBreakpoint.None" Collapsed="false" CssClass="mt-3">
+    <HeaderTemplate>
+        <AuthorizeView>
+            <Authorized>
+                <HxSidebarBrand BrandName="@(context.User.Identity.Name)" BrandNameShort="Hi" />
+            </Authorized>
+            <NotAuthorized>
+                <HxSidebarBrand BrandName="Guest" BrandNameShort="Hi" />
+            </NotAuthorized>
+        </AuthorizeView>
+    </HeaderTemplate>
+    <ItemsTemplate>
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <HxSidebarItem Icon="BootstrapIcon.CardImage" Href="test" Text="Manage Clients">
+                    <ChildContent>
+                        <HxSidebarItem Icon="BootstrapIcon.Plus" Href="#x1" Text="Add Users" Match="NavLinkMatch.All"></HxSidebarItem>
+                        <HxSidebarItem Icon="BootstrapIcon.Controller" Href="#x1" Text="Assign Role" Match="NavLinkMatch.All"></HxSidebarItem>
+                        <HxSidebarItem Icon="BootstrapIcon.SendExclamationFill" Href="#x1" Text="Revoke Client" Match="NavLinkMatch.All"></HxSidebarItem>
+                        <HxSidebarItem Icon="BootstrapIcon.Bell" Href="#x1" Text="Incoming Applicants" Match="NavLinkMatch.All"></HxSidebarItem>
+                    </ChildContent>
+                </HxSidebarItem>
+                <HxSidebarItem Icon="BootstrapIcon.GraphUp" Href="#1" Text="Manage Categories">
+                    <ChildContent>
+                        <HxSidebarItem Icon="BootstrapIcon.Archive" Href="manage-categories" Text="Manage Category" Match="NavLinkMatch.All"></HxSidebarItem>
+
+                    </ChildContent>
+                </HxSidebarItem>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView>
+            <Authorized>
+                <HxSidebarItem Icon="BootstrapIcon.Octagon" Href="#x1" Text="My Company">
+                    <ChildContent>
+                        <HxSidebarItem Icon="BootstrapIcon.Star" Href="company-info" Text="Setup Company" Match="NavLinkMatch.All" CssClass="mt-3"></HxSidebarItem>
+                    </ChildContent>
+                </HxSidebarItem>
+            </Authorized>
+        </AuthorizeView>
+
+        <HxSidebarItem Text="Account Settings" Icon="BootstrapIcon.Lock">
+            <AuthorizeView>
+                <Authorized>
+                    <HxButton Outline="false" Color="ThemeColor.Link" Text="Logout" OnClick="LogoutAsync" CssClass="text-danger fw-bold text-start mb-2 border-0" style="text-decoration:none; margin-left:2rem;width:100px;" />
+                </Authorized>
+                <NotAuthorized>
+                    <HxSidebarItem Text="Login" Href="login" Match="NavLinkMatch.All" />
+                    <HxSidebarItem Text="Create Account" Href="registration" Match="NavLinkMatch.All" />
+                </NotAuthorized>
+            </AuthorizeView>
+        </HxSidebarItem>
+    </ItemsTemplate>
+</HxSidebar>
+
+
+
+
+
+@code {
+    public bool Collapsed { get; set; }
+    public async Task LogoutAsync()
+    {
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+        await customAuthStateProvider.UpdateAuthenticationState(new UserSession());
+    }
+}

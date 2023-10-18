@@ -1,0 +1,64 @@
+﻿@inject NavigationManager NavManager
+<div class="card border-1 shadow-lg p-0 align-bottom" id="tabBar">
+    <div class="container-fluid">
+        <div class="row text-center d-flex justify-content-evenly">
+            <div class="col-auto">
+                <div class="vstack gap-1 text-center" @onclick="@(() => NavigateTo(""))">
+                    <i class="oi oi-home fs-4 setPointer text-primary"></i>
+                    <h6 class="text-primary text-wrap setPointer">Home</h6>
+                </div>
+            </div>
+            <Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+                <Authorized>
+                    <div class="col-auto">
+                        <div class="vstack gap-1 text-center" @onclick="@(() => NavigateTo("post-job"))">
+                            <i class="oi oi-aperture fs-4 setPointer"></i>
+                            <h6 class="text-wrap setPointer">Post</h6>
+                        </div>
+                    </div>
+                </Authorized>
+            </Microsoft.AspNetCore.Components.Authorization.AuthorizeView>
+            <div class="col-auto">
+                <div class="vstack gap-1 text-center" @onclick="@(() => NavigateTo("categories"))">
+                    <i class="oi oi-list-rich fs-4 setPointer"></i>
+                    <h6 class="text-wrap setPointer">Categories</h6>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="vstack gap-1 text-center" @onclick="@(() => NavigateTo("settings"))">
+                    <i class="oi oi-cog fs-4 setPointer"></i>
+                    <h6 class="text-wrap setPointer">Settings</h6>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+<style>
+    #tabBar {
+        position: fixed;
+        bottom: 0;
+        align-self: center;
+        left: 0%;
+        right: 0%;
+    }
+
+    .setPointer {
+        cursor: pointer;
+    }
+</style>
+
+@code {
+    public bool Visible { get; set; } = false;
+    private void NavigateTo(string url)
+    {
+        NavManager.NavigateTo($"/{url}");
+    }
+
+
+}

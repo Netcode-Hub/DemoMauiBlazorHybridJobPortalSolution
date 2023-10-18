@@ -1,0 +1,147 @@
+﻿@page "/categories"
+@using Havit.Blazor.Components.Web
+@using Havit.Blazor.Components.Web.Bootstrap
+@using System.Net.Http.Json
+@using Library.Models
+@using MauiAppClient.Data
+@inject BaseServices baseService
+@inject NavigationManager NavManager
+<HxNavbar CssClass="bg-primary nav">
+    <span style="visibility:@HeaderVisibility">Job Categories</span>
+    <button class="btn btn-none float-start" style="visibility: @ButtonVisibility; position:absolute; left:0" @onclick="ReturnToCategoryList">
+        <i class="oi oi-arrow-circle-left text-start"></i>
+    </button>
+
+    <HxSearchBox DataProvider="ProvideSearchResults"
+                 TItem="SearchBoxItem"
+                 ItemTitleSelector="i => i.Title"
+                 ItemSubtitleSelector="i => i.Subtitle"
+                 ItemIconSelector="i => i.Icon"
+                 Placeholder="Search Category"
+                 AllowTextQuery="false"
+                 OnItemSelected="OnItemSelected">
+        <DefaultContentTemplate>
+            <div class="p-2 text-muted">Search for Jobs, Offers or Appointments...</div>
+        </DefaultContentTemplate>
+        <NotFoundTemplate>
+            <div class="small py-2 px-3 text-muted"><HxIcon CssClass="me-2" Icon="BootstrapIcon.EmojiFrown" />Sorry, I did not find that...</div>
+        </NotFoundTemplate>
+    </HxSearchBox>
+</HxNavbar>
+
+<div class="card mt-5 border-0">
+    <HxListGroup>
+        @if (PageListVisible)
+        {
+            if (CategoryWithNumberOfJobs.Count > 0)
+            {
+                foreach (var item in CategoryWithNumberOfJobs.Where(_ => _.JobQuanities > 0).ToList().OrderBy(_ => _.CategoryName))
+                {
+                    <a class="text-decoration-none" @onclick="(()=>GetThisCategoryJobs(item.Id))">
+                        <HxListGroupItem CssClass="d-flex justify-content-between align-items-center">
+                            @item.CategoryName <HxBadge Color="ThemeColor.Primary">@item.JobQuanities</HxBadge>
+                            </HxListGroupItem>
+                        </a>
+                }
+            }
+        }
+
+        @if (PageVisible)
+        {
+            <a class="text-decoration-none" href="/@SingleCategoryWithNumberOfJobs.Id">
+                <HxListGroupItem CssClass="d-flex justify-content-between align-items-center">
+                    @SingleCategoryWithNumberOfJobs.CategoryName <HxBadge Color="ThemeColor.Primary">@SingleCategoryWithNumberOfJobs.JobQuanities</HxBadge>
+                    </HxListGroupItem>
+                </a>
+        }
+    </HxListGroup>
+
+
+
+</div>
+<style>
+    .nav {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+    }
+</style>
+
+@code {
+
+    public bool PageListVisible { get; set; } = true;
+    public bool PageVisible { get; set; } = false;
+    public static string HeaderVisibility { get; set; } = "visible";
+    public static string ButtonVisibility { get; set; } = "hidden";
+
+    private List<CategoryWithNumberOfJobs> CategoryWithNumberOfJobs { get; set; } = new();
+    private CategoryWithNumberOfJobs SingleCategoryWithNumberOfJobs { get; set; } = new();
+
+    private List<Category> Categories { get; set; } = new();
+    private List<SearchBoxItem> CategoriesWithIcons { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDefault();
+        HeaderVisibility = "visible";
+        ButtonVisibility = "hidden";
+        PageVisible = false;
+        PageListVisible = true;
+    }
+
+    private void ReturnToCategoryList()
+    {
+        HeaderVisibility = "visible";
+        ButtonVisibility = "hidden";
+        PageVisible = false;
+        PageListVisible = true;
+    }
+
+    private void OnItemSelected(SearchBoxItem item)
+    {
+        if (item is null) return;
+
+        SingleCategoryWithNumberOfJobs = CategoryWithNumberOfJobs.FirstOrDefault(_ => _.Id == item.Id);
+        HeaderVisibility = "hidden";
+        ButtonVisibility = "visible";
+        PageVisible = true;
+        PageListVisible = false;
+    }
+
+    private async Task LoadDefault()
+    {
+        var httpClient = baseService.AddHeaderToHttp();
+
+        //used for the search
+        CategoriesWithIcons?.Clear();
+        var results = await httpClient.GetFromJsonAsync<List<Category>>($"{baseService.BaseUrl}/api/Job/get-categories");
+        foreach (var i in results.OrderByDescending(_ => _.Id))
+            CategoriesWithIcons.Add(new SearchBoxItem() { Id = i.Id, Title = i.Title, Subtitle = i.SubTitle, Icon = BootstrapIcon.ArchiveFill });
+
+        //used for displaying cat with no of jobs available
+        CategoryWithNumberOfJobs?.Clear();
+        var cats = await httpClient.GetFromJsonAsync<List<CategoryWithNumberOfJobs>>($"{baseService.BaseUrl}/api/Job/get-cat-with-Job-quantities");
+        foreach (var i in cats)
+            CategoryWithNumberOfJobs.Add(i);
+    }
+
+    private void GetThisCategoryJobs(int id)
+    {
+        NavManager.NavigateTo($"/{id}");
+    }
+
+    private async Task<SearchBoxDataProviderResult<SearchBoxItem>> ProvideSearchResults(SearchBoxDataProviderRequest request)
+    {
+        await Task.Delay(400);
+        return new() { Data = CategoriesWithIcons.Where(i => i.Title.Contains(request.UserInput, StringComparison.OrdinalIgnoreCase)) };
+    }
+
+    public class SearchBoxItem
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string Subtitle { get; set; }
+        public BootstrapIcon Icon { get; set; }
+    }
+}

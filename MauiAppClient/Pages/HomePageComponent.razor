@@ -1,0 +1,139 @@
+﻿@page "/"
+ @page "/{CategoryId:int}" 
+@using Havit.Blazor.Components.Web.Bootstrap
+
+@using MauiAppClient.Data
+@using Microsoft.AspNetCore.Components.Authorization
+@using Library.Models
+@using System.Net.Http.Json
+@using Syncfusion.Blazor.Navigations
+@inject NavigationManager NavManager
+@inject BaseServices baseService
+
+<HxNavbar CssClass="bg-primary nav">
+    <HxNavbarText CssClass="text-white">Job-Home</HxNavbarText>
+</HxNavbar>
+<div class="container-fluid mt-5">
+    <SfAccordion ExpandMode="ExpandMode.Single">
+        <AccordionItems>
+            @if (Jobs.Count() > 0)
+            {
+                foreach (var item in Jobs)
+                {
+                    <AccordionItem CssClass="accordion">
+                        <HeaderTemplate>
+                            <div>@item.Title</div>
+                            @if (item.Featured)
+                            {
+                                <div class="design"><span style="font-size:10px;">Featured</span></div>
+                            }
+                        </HeaderTemplate>
+                        <ContentTemplate>
+                            <div class="card">
+                                <div class="card-body">
+                                    @{
+                                         string image = $"{baseService.BaseUrl}/api/Job/get-logo/{item.CompanyLogo}";
+                                    }
+                                    <img src="image" class="img-thumbnail" width="50" height="50" style="border-radius:50px" />
+                                    <span class="fw-bold" style="margin-top:15px; margin-left:5px;">@item.CompanyName</span>
+
+                                    <p class="text-muted">@item.Description</p>
+
+
+                                    <span class="badge bg-success">@item.JobMode</span>
+                                    <span class="badge bg-primary">$ @item.MinSalaryRange - @item.MaxSalaryRange</span>
+                                    <span></span><span class="badge bg-warning">Job Function: @item.Function</span>
+                                    <br /><br />
+                                    <SfAccordion ExpandMode="ExpandMode.Single">
+                                        <AccordionItems>
+                                            <AccordionItem>
+                                                <HeaderTemplate>
+                                                    <div>Job Provider Details</div>
+                                                </HeaderTemplate>
+                                                <ContentTemplate>
+                                                    <span class="badge bg-primary">@item.CompanyAddress</span>
+                                                    <span class="badge bg-warning">@item.CompanyLocation</span>
+                                                    <span class="badge bg-danger">@item.CompanyEmail</span>
+                                                    <span class="badge bg-success">@item.Phone</span>
+                                                </ContentTemplate>
+                                            </AccordionItem>
+                                        </AccordionItems>
+                                    </SfAccordion>
+                                </div>
+                            </div>
+                        </ContentTemplate>
+                    </AccordionItem>
+                }
+            }
+        </AccordionItems>
+    </SfAccordion>
+</div>
+
+
+
+<style>
+    .accordion {
+        position: absolute;
+        left: 0;
+        right: 0;
+    }
+
+    .nav {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+    }
+
+    .design {
+        transform: rotate(-60deg);
+        background-image: linear-gradient(to right, #947FFF, #F875B3);
+        position: absolute;
+        top: -2px;
+        left: -18px;
+        margin-right: 5px;
+        box-shadow: 5px 5px 5px #F875B3;
+        border-radius: 10px;
+        width: 40px;
+    }
+</style>
+
+@code {
+    [Parameter] public int CategoryId { get; set; }
+    private List<GetJob> Jobs { get; set; } = new();
+    protected async override Task OnParametersSetAsync()
+    {
+        if (CategoryId <= 0)
+        {
+            await LoadDefault();
+        }
+        else
+        {
+            var httpClient = baseService.AddHeaderToHttp();
+            var result = await httpClient.GetFromJsonAsync<List<GetJob>>($"{baseService.BaseUrl}/api/Job/all-jobs-with-categoryId/{CategoryId}");
+            Jobs?.Clear();
+            foreach (var i in result)
+                Jobs.Add(i);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDefault();
+    }
+
+    private async Task LoadDefault()
+    {
+        try
+        {
+
+
+            var httpClient = baseService.AddHeaderToHttp();
+            var results = await httpClient.GetFromJsonAsync<List<GetJob>>($"{baseService.BaseUrl}/api/Job/all-jobs");
+            Jobs?.Clear();
+            foreach (var i in results.OrderByDescending(_ => _.Featured))
+                Jobs.Add(i);
+        }
+        catch { }
+    }
+}

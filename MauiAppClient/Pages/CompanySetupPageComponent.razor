@@ -1,0 +1,122 @@
+﻿@page "/company-info"
+@using Library.Models
+
+@using MauiAppClient.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Net.Http.Json
+@using System.Security.Claims
+@using System.Text.Json
+@inject BaseServices baseService
+@inject NavigationManager NavManager
+@using Syncfusion.Blazor
+@using System.Net.Http.Headers
+@using Syncfusion.Blazor.Inputs
+@attribute [Authorize]
+
+<div class="card  border-1 shadow-lg">
+    <EditForm Model="CompanyInfo" OnValidSubmit="HandleSave">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <ValidationSummary></ValidationSummary>
+        @{
+            string ImageUrl = $"{baseService.BaseUrl}/api/Job/get-logo/{CompanyInfo.CompanyLogo}";
+        }
+        <div class="card-header"><h5>Company Information</h5></div>
+        <div class="form-group justify-content-center text-center mb-1">
+            <img class=" text-center" src="@ImageUrl" width="150" height="100" style="border-radius:20px; box-shadow:10px 10px 5px #eee;" />
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <SfTextBox Placeholder="Company Name" FloatLabelType="FloatLabelType.Auto" @bind-Value="CompanyInfo.CompanyName" Type="InputType.Text" ValidateOnInput="true" ShowClearButton="true"></SfTextBox>
+                <ValidationMessage For="()=>CompanyInfo.CompanyName" />
+            </div>
+            <div class="form-group">
+                <SfTextBox Enabled="true" Placeholder="Company Address"  FloatLabelType="FloatLabelType.Auto" @bind-Value="CompanyInfo.CompanyAddress" ValidateOnInput="true" Type="InputType.Text" ShowClearButton="true"></SfTextBox>
+                <ValidationMessage For="()=>CompanyInfo.CompanyAddress" />
+            </div>
+            <div class="form-group">
+                <SfTextBox Enabled="true" Placeholder="Company Location"  FloatLabelType="FloatLabelType.Auto" @bind-Value="CompanyInfo.CompanyLocation" ValidateOnInput="true" Type="InputType.Text" ShowClearButton="true"></SfTextBox>
+                <ValidationMessage For="()=>CompanyInfo.CompanyLocation" />
+            </div>
+            <div class="form-group mt-2">
+                <label class="form-label">Upload Company Certificate</label>
+                <SfUploader AutoUpload="true" AllowedExtensions=".pdf, .PDF">
+                    <UploaderEvents ValueChange="OnCertificateChange"></UploaderEvents>
+                </SfUploader>
+                <ValidationMessage For="()=>CompanyInfo.CompanyLogo" />
+            </div>
+            <div class="form-group mt-2">
+                <label class="form-label">Upload Company Logo</label>
+                <SfUploader AutoUpload="true" AllowedExtensions=".png, .PNG, .jpg, .JPG, .jpg, .JPEG">
+                    <UploaderEvents ValueChange="OnLogoChange"></UploaderEvents>
+                </SfUploader>
+                <ValidationMessage For="()=>CompanyInfo.CompanyCertificateName" />
+            </div>
+            <div class="form-group mt-3">
+                <button type="submit" class="btn btn-primary float-end">Submit</button>
+            </div>
+        </div>
+    </EditForm>
+</div>
+
+
+@code {
+    private CompanyInfo CompanyInfo { get; set; } = new();
+    protected async override Task OnInitializedAsync()
+    {
+        var httpClient = baseService.AddHeaderToHttp();
+        var result = await httpClient.GetAsync($"{baseService.BaseUrl}/api/Job/get-business-data/{baseService.UserSession.UserId}");
+        if (result.IsSuccessStatusCode)
+        {
+            var response = await result.Content.ReadFromJsonAsync<CompanyInfo>();
+            CompanyInfo = new CompanyInfo();
+            CompanyInfo = response;
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        CompanyInfo.ClientId = baseService.UserSession.UserId;
+        var httpClient = baseService.AddHeaderToHttp();
+        var result = await httpClient.PostAsJsonAsync($"{baseService.BaseUrl}/api/Job/submit-business-data", CompanyInfo);
+        var response = await result.Content.ReadFromJsonAsync<ServiceResponse>();
+        await Application.Current.MainPage.DisplayAlert("Info", response.Message, "Ok");
+    }
+
+    private async Task OnLogoChange(UploadChangeEventArgs args)
+    {
+        foreach (var file in args.Files)
+        {
+            //Read the file
+            var httpContent = new MultipartFormDataContent();
+            httpContent.Add(new StreamContent(file.File.OpenReadStream()), "file", file.File.Name);
+
+            // Create instance of HttpClient
+            var httpClient = baseService.AddHeaderToHttp();
+            var result = await httpClient.PostAsync($"{baseService.BaseUrl}/api/UlpoadFile/logo", httpContent);
+            var response = await result.Content.ReadAsStringAsync();
+            CompanyInfo.CompanyLogo = response;
+        }
+    }
+
+    private async Task OnCertificateChange(UploadChangeEventArgs args)
+    {
+        foreach (var file in args.Files)
+        {
+            //Read the file
+            var httpContent = new MultipartFormDataContent();
+            httpContent.Add(new StreamContent(file.File.OpenReadStream()), "file", file.File.Name);
+
+            // Create instance of HttpClient
+            var httpClient = baseService.AddHeaderToHttp();
+            var result = await httpClient.PostAsync($"{baseService.BaseUrl}/api/UlpoadFile/certificate", httpContent);
+            var response = await result.Content.ReadAsStringAsync();
+            CompanyInfo.CompanyCertificateName = response;
+        }
+    }
+
+
+    
+
+    
+}

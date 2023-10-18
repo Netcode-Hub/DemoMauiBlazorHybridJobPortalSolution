@@ -1,0 +1,136 @@
+﻿@page "/manage-categories"
+@using Havit.Blazor.Components.Web.Bootstrap
+
+@using System.Net.Http.Json
+@using Library.Models
+@using MauiAppClient.Data
+@inject BaseServices baseService
+
+<HxNavbar CssClass="bg-primary nav">
+    <HxNavbarText CssClass="text-white">Manage Categories</HxNavbarText>
+    <div class="hstack gap-1">
+        <button class="btn btn-link text-white fw-bold text-decoration-none  border-0" @onclick="NavigateToHome"><i class="oi oi-home fs-6 text-white"></i></button>
+        <button class="btn btn-link text-white fw-bold text-decoration-none  border-0" @onclick="HandleAddCategory"><i class="oi oi-plus fs-6 text-white"></i></button>
+    </div>
+</HxNavbar>
+
+<div class="card mt-5">
+    <div class="card-body">
+        <AddCategoryComponent Visible="Visible" HandleSaveEvent="HandleSave" CategoryModel="Category" />
+        <CategoryListComponent CatListVisible="CatListVisible" Categories="Categories" HandleEditEvent="HandleditCategory" HandleDeleteEvent="HandleDeleteCategory" />
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+<style>
+    .nav {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+    }
+</style>
+
+@code {
+
+    private bool CatListVisible { get; set; } = false;
+    private bool Visible { get; set; } = false;
+
+    private List<Category> Categories { get; set; } = new();
+    public Category Category { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDefault();
+    }
+
+    private async Task LoadDefault()
+    {
+        Categories?.Clear();
+        var httpClient = baseService.AddHeaderToHttp();
+        var results = await httpClient.GetAsync($"{baseService.BaseUrl}/api/Job/get-categories");
+        if (results.IsSuccessStatusCode)
+        {
+            var responses = await results.Content.ReadFromJsonAsync<List<Category>>();
+            if (responses is null || responses.Count() <= 0) return;
+            foreach (var r in responses.OrderByDescending(_ => _.Id))
+                Categories.Add(r);
+
+            CatListVisible = true;
+        }
+    }
+
+
+    public async Task HandleSave()
+    {
+        if (Category is null)
+            await App.Current.MainPage.DisplayAlert("Alert", "Object is Null!", "Alright");
+
+        var httpClient = baseService.AddHeaderToHttp();
+        var result = await httpClient.PostAsJsonAsync($"{baseService.BaseUrl}/api/Job/add-update-category", Category);
+        if (result.IsSuccessStatusCode)
+        {
+            var response = await result.Content.ReadFromJsonAsync<ServiceResponse>();
+            if (response.Flag)
+            {
+                await App.Current.MainPage.DisplayAlert("Success", response.Message, "Ok");
+                Category = new Category();
+                ResetAll();
+                await LoadDefault();
+            }
+        }
+    }
+
+    private void HandleAddCategory()
+    {
+        ResetAll();
+        Visible = true;
+    }
+    private void NavigateToHome()
+    {
+        ResetAll();
+        CatListVisible = true;
+    }
+
+    private void HandleditCategory(Category category)
+    {
+        if (category is null) return;
+        Category = new Category();
+        Category = category;
+        ResetAll();
+        Visible = true;
+    }
+
+    private async Task HandleDeleteCategory(Category category)
+    {
+        if (category is null) return;
+
+        string data = $"Are you sure you want to delete the following category? {Environment.NewLine}Title: {category.Title}{Environment.NewLine}Subtitle: {category.SubTitle}";
+        bool answer = await App.Current.MainPage.DisplayAlert("Confirm Delete", data, "Yes", "No");
+        if (!answer) return;
+
+        var httpclient = baseService.AddHeaderToHttp();
+        var result = await httpclient.DeleteAsync($"{baseService.BaseUrl}/api/Job/delete-category/{category.Id}");
+        if (result.IsSuccessStatusCode)
+        {
+            var response = await result.Content.ReadFromJsonAsync<ServiceResponse>();
+            await App.Current.MainPage.DisplayAlert("Alert", response.Message, "Ok");
+            ResetAll();
+            await LoadDefault(); 
+        }
+    }
+
+    private void ResetAll()
+    {
+        Visible = false;
+        CatListVisible = false;
+    }
+}

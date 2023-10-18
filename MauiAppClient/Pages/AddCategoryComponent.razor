@@ -1,0 +1,40 @@
+﻿@using Library.Models
+@using Syncfusion.Blazor.Inputs
+@if (Visible)
+{
+    <EditForm Model="CategoryModel" OnValidSubmit="HandleSave">
+        <div class="card">
+            <div class="card-header">
+                Add Category
+            </div>
+            <div class="card-body">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <SfTextBox Enabled="true" Placeholder="Category Name" FloatLabelType="FloatLabelType.Auto" ValidateOnInput="true" @bind-Value="CategoryModel.Title" Type="InputType.Text" ShowClearButton="true"></SfTextBox>
+                <ValidationMessage For="()=>CategoryModel.Title" />
+                <SfTextBox Enabled="true" Placeholder="Category Subtitle" FloatLabelType="FloatLabelType.Auto" @bind-Value="CategoryModel.SubTitle" ShowClearButton="true" ValidateOnInput="true" Type="InputType.Text"></SfTextBox>
+                <ValidationMessage For="()=>CategoryModel.SubTitle" />
+            </div>
+            <div class="card-footer">
+                <div class="form-group mt-2">
+                    <button type="submit" class="btn btn-success float-end">Save</button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}
+
+
+@code {
+    [Parameter] public bool Visible { get; set; } = false;
+    [Parameter] public Category CategoryModel { get; set; }
+    [Parameter] public EventCallback<Category> HandleSaveEvent { get; set; }
+
+    private async Task HandleSave()
+    {
+        await HandleSaveEvent.InvokeAsync(CategoryModel);
+    }
+
+}
+
+

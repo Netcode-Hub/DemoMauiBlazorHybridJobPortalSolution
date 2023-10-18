@@ -1,0 +1,101 @@
+﻿@page "/login"
+@using Library.Models
+@using MauiAppClient.Authentication
+@using MauiAppClient.Data
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Net.Http.Json;
+@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
+@using System.Text.Json
+@using Syncfusion.Blazor.Inputs
+@inject HttpClient httpClient
+@inject NavigationManager navigateMgr
+@inject AuthenticationStateProvider authStateProvider
+@inject BaseServices baseUrlService
+<PageTitle>Login</PageTitle>
+<div class="card mt-5 border-1 shadow-lg">
+    <div class="card border-1 shadow-lg" style=" background-image: linear-gradient(to right, #947FFF, #F875B3);">
+        <div class="card border-1 shadow-lg" style=" background-image: linear-gradient(to right, #947FFF, #F875B3);">
+            <div class="card mt-1 border-1 shadow-lg" style=" background-image: linear-gradient(to right, #947FFF, #F875B3);">
+                <div class="card border-1 shadow-lg">
+                    <div class="card border-1 shadow-lg">
+                        <div class="card-header"><h4>Login An Account</h4></div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-xl-3"></div>
+                                <div class=" col-xl-6 col-md-4 col-sm-12">
+                                    <div class="card border-1 shadow-lg">
+                                        <div class="card-header">Provide details to login</div>
+                                        <div class="card-body">
+                                            <EditForm Model="LoginModel" OnValidSubmit="HandleLoginOperation">
+                                                <DataAnnotationsValidator />
+                                                <ValidationSummary />
+                                                <div class="form-group">
+                                                    <SfTextBox Enabled="true" Placeholder="Email Address" FloatLabelType="FloatLabelType.Auto" ValidateOnInput="true" @bind-Value="LoginModel.Email" Type="InputType.Text" ShowClearButton="true"></SfTextBox>
+                                                    <ValidationMessage For="()=>LoginModel.Email" />
+                                                </div>
+                                                <div class="form-group">
+                                                    <SfTextBox Enabled="true" Placeholder="Password" FloatLabelType="FloatLabelType.Auto" @bind-Value="LoginModel.Password" ShowClearButton="true" ValidateOnInput="true" Type="InputType.Password"></SfTextBox>
+                                                    <ValidationMessage For="()=>LoginModel.Password" />
+                                                </div>
+                                                <div class="form-group mt-4">
+                                                    <button type="submit" class="btn btn-success float-end">Login</button>
+                                                </div>
+                                            </EditForm>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@code {
+    private Login LoginModel { get; set; } = new();
+
+    private async Task HandleLoginOperation()
+    {
+        var result = await httpClient.PostAsJsonAsync($"{baseUrlService.BaseUrl}/api/Account/login", LoginModel);
+        if (result.IsSuccessStatusCode)
+        {
+            var response = await result.Content.ReadFromJsonAsync<ServiceResponse>();
+            if (response.Flag)
+            {
+                //Save the token, decrypt and get user claims and save to secured storage.
+                var getUserSession = GetUserClaims(response.Token);
+                if (getUserSession == null) return;
+
+                var customAuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+                await customAuthStateProvider.UpdateAuthenticationState(getUserSession);
+                await Application.Current.MainPage.DisplayAlert("Info", response.Token, "Ok");
+                navigateMgr.NavigateTo("/", forceLoad: true, replace: true);
+                LoginModel = new Login();
+            }
+            else
+            {
+                await Application.Current.MainPage.DisplayAlert("Info", response.Message, "Ok");
+                return;
+            }
+        }
+
+    }
+
+    private UserSession GetUserClaims(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var readToken = handler.ReadJwtToken(token);
+        var claims = readToken.Claims;
+
+        return new UserSession()
+            {
+                UserName = claims.First(_ => _.Type == ClaimTypes.Name).Value,
+                UserRole = claims.First(_ => _.Type == ClaimTypes.Role).Value,
+                Email = claims.First(_ => _.Type == ClaimTypes.Email).Value,
+                UserId = int.Parse(claims.First(_ => _.Type == ClaimTypes.SerialNumber).Value),
+                Token = token
+            };
+    }
+}

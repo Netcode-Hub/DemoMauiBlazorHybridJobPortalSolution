@@ -1,0 +1,62 @@
+﻿@using Library.Models
+
+@if (CatListVisible)
+{
+    <div class="card">
+        <div class="card-header">Category List</div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Category Name</th>
+                        <th>Category Subtitle</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Categories.Count() > 0)
+                    {
+                        foreach (var item in Categories)
+                        {
+                            <tr>
+                                <td>@item.Title</td>
+                                <td>@item.SubTitle</td>
+                                <td>
+                                    <div class="hstack gap-2">
+                                        <i class="oi oi-pencil text-info" @onclick="(()=> Edit(item.Id))"></i>
+                                        <i class="oi oi-trash text-danger" @onclick="(()=> Delete(item.Id))"></i>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+
+@code {
+    [Parameter] public bool CatListVisible { get; set; }
+    [Parameter] public List<Category> Categories { get; set; }
+
+    //For editing
+    [Parameter] public EventCallback<Category> HandleEditEvent { get; set; }
+    private async Task Edit(int id)
+    {
+        var cat = Categories.FirstOrDefault(_ => _.Id == id);
+        if (cat is not null)
+            await HandleEditEvent.InvokeAsync(cat);
+    }
+
+    // For Deleting
+    [Parameter] public EventCallback<Category> HandleDeleteEvent { get; set; }
+    private async Task Delete(int id)
+    {
+        var cat = Categories.FirstOrDefault(_ => _.Id == id);
+        if (cat is not null)
+            await HandleDeleteEvent.InvokeAsync(cat);
+    }
+
+}

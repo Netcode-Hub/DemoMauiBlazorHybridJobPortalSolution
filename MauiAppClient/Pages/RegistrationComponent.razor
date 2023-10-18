@@ -1,0 +1,79 @@
+﻿@page "/registration"
+@using System.Net.Http.Json;
+@using System.Text;
+@using Library.Models
+@using MauiAppClient.Data
+@using Syncfusion.Blazor.Inputs
+@inject HttpClient httpClient
+@inject NavigationManager NavManager
+@inject BaseServices baseUrlService
+<PageTitle>Registration</PageTitle>
+
+<div class="card border-1 shadow-lg mt-5" style=" background-image: linear-gradient(to right, #947FFF, #F875B3); ">
+    <div class="card border-1 shadow-lg" style=" background-image: linear-gradient(to right, #947FFF, #F875B3);">
+        <div class="card mt-2 border-1 shadow-lg">
+            <EditForm Model="RegistrationModel" OnValidSubmit="HandleSaveOperation">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <ValidationSummary></ValidationSummary>
+                <div class="card  border-1 shadow-lg">
+                    <div class="card-header bg-white"> <h5>Create an Account</h5></div>
+                    <div class="card-body">
+                        <div class="card-header">Provide Details</div>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <SfTextBox Enabled="true" Placeholder="Fullname" FloatLabelType="FloatLabelType.Auto" ValidateOnInput="true" @bind-Value="RegistrationModel.Name" Type="InputType.Text" ShowClearButton="true"></SfTextBox>
+                                    <ValidationMessage For="()=>RegistrationModel.Name" />
+                                </div>
+                                <div class="form-group">
+                                    <SfNumericTextBox Enabled="true" Placeholder="Telephone Phone" FloatLabelType="FloatLabelType.Auto" @bind-Value="RegistrationModel.Phone" ValidateDecimalOnType="true" ValidateOnInput="true" ShowClearButton="true" ShowSpinButton="true"></SfNumericTextBox>
+                                    <ValidationMessage For="()=>RegistrationModel.Phone" />
+                                </div>
+                                <div class="form-group">
+                                    <SfTextBox Enabled="true" Placeholder="Email Address" FloatLabelType="FloatLabelType.Auto" @bind-Value="RegistrationModel.Email" ValidateOnInput="true" Type="InputType.Email" ShowClearButton="true"></SfTextBox>
+                                    <ValidationMessage For="()=>RegistrationModel.Email" />
+                                </div>
+                                <div class="form-group">
+                                    <SfTextBox Enabled="true" Placeholder="Password" FloatLabelType="FloatLabelType.Auto" @bind-Value="RegistrationModel.Password" ShowClearButton="true" ValidateOnInput="true" Type="InputType.Password"></SfTextBox>
+                                    <ValidationMessage For="()=>RegistrationModel.Password" />
+                                </div>
+                                <div class="form-group">
+                                    <SfTextBox Enabled="true" Placeholder="Confirm Password" Type="InputType.Password" FloatLabelType="FloatLabelType.Auto" @bind-Value="RegistrationModel.ConfirmPassword" ValidateOnInput="true" ShowClearButton="true"></SfTextBox>
+                                    <ValidationMessage For="()=>RegistrationModel.Password" />
+                                </div>
+                                <div class="m-3">
+                                    <button class="btn btn-primary float-end" type="submit">Create Account</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+
+
+@code
+{
+    private RegistrationModel RegistrationModel { get; set; } = new();
+    private async Task HandleSaveOperation()
+    {
+        var result = await httpClient.PostAsJsonAsync($"{baseUrlService.BaseUrl}/api/account/register", RegistrationModel);
+        var readResponse = await result.Content.ReadFromJsonAsync<ServiceResponse>();
+        if (readResponse.Flag)
+        {
+            await Application.Current.MainPage.DisplayAlert("Success", readResponse.Message, "Ok");
+            NavManager.NavigateTo("/", replace: true);
+            RegistrationModel = new RegistrationModel();
+        }
+        else
+        {
+            await Application.Current.MainPage.DisplayAlert("Alert", readResponse.Message, "Ok");
+            return;
+        }
+
+    }
+}
+}
